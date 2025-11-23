@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>I Am Only Me | Private Video Gallery</title>
+    <title>I Am Only Me | Video Gallery</title>
     <style>
         * {
             margin: 0;
@@ -92,11 +92,6 @@
             border-radius: 15px;
             margin-bottom: 30px;
             text-align: center;
-            display: none;
-        }
-        
-        .auth-section.active {
-            display: block;
         }
         
         .auth-form {
@@ -158,11 +153,6 @@
             padding: 20px;
             border-radius: 15px;
             margin-bottom: 30px;
-            display: none;
-        }
-        
-        .search-section.active {
-            display: block;
         }
         
         .search-container {
@@ -215,11 +205,6 @@
             transition: all 0.3s ease;
             cursor: pointer;
             text-align: center;
-            display: none;
-        }
-        
-        .upload-section.active {
-            display: block;
         }
         
         .upload-section:hover {
@@ -289,11 +274,6 @@
         
         .gallery-section {
             margin-top: 30px;
-            display: none;
-        }
-        
-        .gallery-section.active {
-            display: block;
         }
         
         .gallery-header {
@@ -403,6 +383,14 @@
             background: rgba(255, 255, 255, 0.2);
         }
         
+        .download-btn {
+            background: rgba(76, 217, 100, 0.3);
+        }
+        
+        .download-btn:hover {
+            background: rgba(76, 217, 100, 0.5);
+        }
+        
         .delete-btn {
             background: rgba(255, 107, 107, 0.3);
         }
@@ -445,11 +433,6 @@
         .logout-section {
             text-align: center;
             margin-top: 20px;
-            display: none;
-        }
-        
-        .logout-section.active {
-            display: block;
         }
         
         .logout-btn {
@@ -476,6 +459,20 @@
             opacity: 0.7;
         }
         
+        .admin-panel {
+            background: rgba(253, 187, 45, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(253, 187, 45, 0.5);
+        }
+        
+        .admin-title {
+            color: #fdbb2d;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
         @media (max-width: 768px) {
             h1 {
                 font-size: 2.2rem;
@@ -498,68 +495,32 @@
             }
         }
 
-        /* Storage Management Styles */
-        .storage-management {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 15px;
-            border-radius: 10px;
-            margin-top: 10px;
-            display: none;
-        }
-
-        .storage-management.active {
-            display: block;
-        }
-
-        .storage-stats {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
+        /* Large file upload styles */
+        .large-file-warning {
+            background: rgba(255, 193, 7, 0.2);
+            border: 1px solid rgba(255, 193, 7, 0.5);
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
             font-size: 0.9rem;
         }
 
-        .storage-bar {
-            width: 100%;
-            height: 8px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 4px;
-            overflow: hidden;
-            margin-bottom: 10px;
-        }
-
-        .storage-progress {
-            height: 100%;
-            background: linear-gradient(to right, #4cd964, #34e89e);
-            transition: width 0.3s;
-        }
-
-        .manage-storage-btn {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            padding: 8px 15px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 0.8rem;
-            transition: all 0.3s;
-        }
-
-        .manage-storage-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
+        .file-size-info {
+            color: #4cd964;
+            font-weight: bold;
         }
     </style>
 
-    <!-- Storage Management Script -->
+    <!-- Enhanced Storage System for Large Files -->
     <script>
-        // Enhanced Storage Management System
-        class UnlimitedStorage {
+        class LargeFileStorage {
             constructor() {
-                this.dbName = 'UnlimitedVideoStorageDB';
-                this.dbVersion = 2;
+                this.dbName = 'LargeVideoStorageDB';
+                this.dbVersion = 3;
                 this.storeName = 'videos';
-                this.chunkSize = 5 * 1024 * 1024; // 5MB chunks for large files
+                this.chunkSize = 10 * 1024 * 1024; // 10MB chunks for better performance
+                this.maxFileSize = 5 * 1024 * 1024 * 1024; // 5GB max file size
                 this.db = null;
-                this.initialized = false;
             }
 
             async init() {
@@ -569,7 +530,6 @@
                     request.onerror = () => reject(request.error);
                     request.onsuccess = () => {
                         this.db = request.result;
-                        this.initialized = true;
                         resolve(this.db);
                     };
                     
@@ -589,72 +549,53 @@
             }
 
             async saveVideo(file) {
-                if (!this.initialized) await this.init();
-                
+                if (file.size > this.maxFileSize) {
+                    throw new Error(`File too large. Maximum size is ${this.formatFileSize(this.maxFileSize)}`);
+                }
+
                 return new Promise((resolve, reject) => {
                     const transaction = this.db.transaction([this.storeName], 'readwrite');
                     const store = transaction.objectStore(this.storeName);
                     
-                    const videoData = {
-                        name: file.name,
-                        size: file.size,
-                        type: file.type,
-                        file: file,
-                        date: new Date().toISOString(),
-                        chunks: await this.splitFileIntoChunks(file)
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const videoData = {
+                            name: file.name,
+                            size: file.size,
+                            type: file.type,
+                            data: e.target.result,
+                            date: new Date().toISOString(),
+                            lastAccessed: new Date().toISOString()
+                        };
+                        
+                        const request = store.add(videoData);
+                        
+                        request.onsuccess = () => resolve({...videoData, id: request.result});
+                        request.onerror = () => reject(request.error);
                     };
-                    
-                    const request = store.add(videoData);
-                    
-                    request.onsuccess = () => resolve({...videoData, id: request.result});
-                    request.onerror = () => reject(request.error);
+                    reader.onerror = () => reject(reader.error);
+                    reader.readAsArrayBuffer(file);
                 });
             }
 
-            async splitFileIntoChunks(file) {
-                const chunks = [];
-                const totalChunks = Math.ceil(file.size / this.chunkSize);
-                
-                for (let i = 0; i < totalChunks; i++) {
-                    const start = i * this.chunkSize;
-                    const end = Math.min(start + this.chunkSize, file.size);
-                    const chunk = file.slice(start, end);
-                    chunks.push(chunk);
-                }
-                
-                return chunks;
-            }
-
             async getAllVideos() {
-                if (!this.initialized) await this.init();
-                
                 return new Promise((resolve, reject) => {
                     const transaction = this.db.transaction([this.storeName], 'readonly');
                     const store = transaction.objectStore(this.storeName);
                     const request = store.getAll();
                     
-                    request.onsuccess = async () => {
-                        const videos = request.result;
-                        // Reconstruct files from chunks
-                        for (let video of videos) {
-                            if (video.chunks) {
-                                video.file = await this.reconstructFileFromChunks(video.chunks, video.type, video.name);
-                            }
-                        }
+                    request.onsuccess = () => {
+                        const videos = request.result.map(video => ({
+                            ...video,
+                            file: new File([video.data], video.name, { type: video.type })
+                        }));
                         resolve(videos);
                     };
                     request.onerror = () => reject(request.error);
                 });
             }
 
-            async reconstructFileFromChunks(chunks, type, name) {
-                const blob = new Blob(chunks, { type });
-                return new File([blob], name, { type, lastModified: Date.now() });
-            }
-
             async deleteVideo(id) {
-                if (!this.initialized) await this.init();
-                
                 return new Promise((resolve, reject) => {
                     const transaction = this.db.transaction([this.storeName], 'readwrite');
                     const store = transaction.objectStore(this.storeName);
@@ -665,55 +606,53 @@
                 });
             }
 
-            async getStorageUsage() {
-                if (!this.initialized) await this.init();
+            async getStorageStats() {
+                const videos = await this.getAllVideos();
+                const totalSize = videos.reduce((sum, video) => sum + video.size, 0);
+                const videoCount = videos.length;
                 
-                return new Promise((resolve, reject) => {
-                    const transaction = this.db.transaction([this.storeName], 'readonly');
-                    const store = transaction.objectStore(this.storeName);
-                    const request = store.getAll();
-                    
-                    request.onsuccess = () => {
-                        const videos = request.result;
-                        const totalSize = videos.reduce((sum, video) => sum + (video.size || 0), 0);
-                        const videoCount = videos.length;
-                        
-                        resolve({
-                            totalSize,
-                            videoCount,
-                            usagePercentage: Math.min((totalSize / (1024 * 1024 * 1024)) * 100, 100) // Cap at 100%
-                        });
-                    };
-                    request.onerror = () => reject(request.error);
-                });
+                return {
+                    totalSize,
+                    videoCount,
+                    averageSize: videoCount > 0 ? totalSize / videoCount : 0
+                };
             }
 
-            async clearAllVideos() {
-                if (!this.initialized) await this.init();
+            formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+
+            async updateAccessTime(id) {
+                const transaction = this.db.transaction([this.storeName], 'readwrite');
+                const store = transaction.objectStore(this.storeName);
+                const getRequest = store.get(id);
                 
-                return new Promise((resolve, reject) => {
-                    const transaction = this.db.transaction([this.storeName], 'readwrite');
-                    const store = transaction.objectStore(this.storeName);
-                    const request = store.clear();
-                    
-                    request.onsuccess = () => resolve();
-                    request.onerror = () => reject(request.error);
-                });
+                getRequest.onsuccess = () => {
+                    const video = getRequest.result;
+                    if (video) {
+                        video.lastAccessed = new Date().toISOString();
+                        store.put(video);
+                    }
+                };
             }
         }
 
-        // Initialize unlimited storage
-        const unlimitedStorage = new UnlimitedStorage();
+        // Initialize storage system
+        const videoStorage = new LargeFileStorage();
     </script>
 </head>
 <body>
     <div class="container">
         <header>
             <h1>I Am Only Me</h1>
-            <p class="subtitle">Private Video Gallery - Unlimited Storage</p>
+            <p class="subtitle">Video Gallery - Watch Videos & Upload with Password</p>
         </header>
         
-        <!-- Telegram Button at the TOP -->
+        <!-- Telegram Button -->
         <section class="telegram-section">
             <h3>Join Our Telegram Community</h3>
             <p style="margin: 15px 0; opacity: 0.9;">Connect with us for updates and more content</p>
@@ -723,14 +662,15 @@
             </a>
         </section>
         
-        <section class="auth-section active" id="authSection">
+        <!-- Admin Upload Section -->
+        <section class="auth-section" id="authSection">
             <div class="auth-form">
-                <h2>Enter Password to Upload Videos</h2>
-                <p style="margin-bottom: 20px; opacity: 0.8;">Only authorized users can add videos to this gallery</p>
+                <h2>Admin Upload Access</h2>
+                <p style="margin-bottom: 20px; opacity: 0.8;">Enter password to upload videos (3GB+ supported)</p>
                 
                 <div class="form-group">
                     <label class="form-label" for="passwordInput">Password</label>
-                    <input type="password" class="form-input" id="passwordInput" placeholder="Enter secret password">
+                    <input type="password" class="form-input" id="passwordInput" placeholder="Enter admin password">
                 </div>
                 
                 <button class="auth-btn" id="loginBtn">Access Upload Panel</button>
@@ -738,7 +678,33 @@
             </div>
         </section>
         
-        <section class="search-section" id="searchSection">
+        <!-- Upload Section (Hidden by default) -->
+        <section class="upload-section" id="uploadArea" style="display: none;">
+            <div class="admin-panel">
+                <div class="admin-title">📁 Admin Upload Panel</div>
+                <p>You can upload large videos up to 5GB. Files are permanently stored.</p>
+            </div>
+            
+            <div class="upload-icon">🚀</div>
+            <p class="upload-text">Drag & drop your video files here or click to browse</p>
+            <input type="file" id="fileInput" class="file-input" accept="video/*" multiple>
+            <button class="upload-btn" id="browseBtn">Upload Videos</button>
+            
+            <div class="large-file-warning">
+                ⚡ <strong>Large File Support:</strong> Videos up to 5GB are supported
+            </div>
+            
+            <p class="storage-info">All videos are permanently stored in your browser</p>
+            <div class="video-count" id="videoCount">Total Videos: 0</div>
+            
+            <div class="progress-container" id="progressContainer">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <div class="progress-text" id="progressText"></div>
+        </section>
+        
+        <!-- Search Section -->
+        <section class="search-section">
             <div class="search-container">
                 <input type="text" class="search-box" id="searchInput" placeholder="Search videos by name...">
                 <button class="search-btn" id="searchBtn">Search</button>
@@ -747,33 +713,8 @@
             <div class="search-results" id="searchResults"></div>
         </section>
         
-        <section class="upload-section" id="uploadArea">
-            <div class="upload-icon">📁</div>
-            <p class="upload-text">Drag & drop your video files here or click to browse</p>
-            <input type="file" id="fileInput" class="file-input" accept="video/*" multiple>
-            <button class="upload-btn" id="browseBtn">Upload Videos</button>
-            <p class="storage-info">Unlimited storage! Upload as many videos as you want</p>
-            <div class="video-count" id="videoCount">Videos: 0</div>
-            
-            <!-- Storage Management -->
-            <div class="storage-management" id="storageManagement">
-                <div class="storage-stats">
-                    <span id="storageUsed">Storage used: 0 MB</span>
-                    <span id="totalVideos">Total videos: 0</span>
-                </div>
-                <div class="storage-bar">
-                    <div class="storage-progress" id="storageProgress"></div>
-                </div>
-                <button class="manage-storage-btn" id="clearAllBtn">Clear All Videos</button>
-            </div>
-            
-            <div class="progress-container" id="progressContainer">
-                <div class="progress-bar" id="progressBar"></div>
-            </div>
-            <div class="progress-text" id="progressText"></div>
-        </section>
-        
-        <section class="gallery-section" id="gallerySection">
+        <!-- Video Gallery (Always visible) -->
+        <section class="gallery-section">
             <div class="gallery-header">
                 <h2 class="gallery-title">Video Gallery</h2>
                 <div class="sort-options">
@@ -786,26 +727,25 @@
             
             <div class="video-gallery" id="videoGallery">
                 <div class="no-videos" id="noVideosMessage">
-                    No videos yet. Enter password to upload videos!
+                    Loading videos...
                 </div>
             </div>
         </section>
         
-        <div class="logout-section" id="logoutSection">
+        <!-- Logout Section (Only for admins) -->
+        <div class="logout-section" id="logoutSection" style="display: none;">
             <button class="logout-btn" id="logoutBtn">Lock Upload Panel</button>
         </div>
         
         <footer>
-            Created with ❤️ | Unlimited Video Storage - Password Protected
+            Created with ❤️ | Watch videos freely • Upload with password • 3GB+ support
         </footer>
     </div>
 
     <script>
         // DOM Elements
         const authSection = document.getElementById('authSection');
-        const searchSection = document.getElementById('searchSection');
         const uploadArea = document.getElementById('uploadArea');
-        const gallerySection = document.getElementById('gallerySection');
         const logoutSection = document.getElementById('logoutSection');
         const passwordInput = document.getElementById('passwordInput');
         const loginBtn = document.getElementById('loginBtn');
@@ -824,114 +764,91 @@
         const progressText = document.getElementById('progressText');
         const sortButtons = document.querySelectorAll('.sort-btn');
         const logoutBtn = document.getElementById('logoutBtn');
-        const storageManagement = document.getElementById('storageManagement');
-        const storageUsed = document.getElementById('storageUsed');
-        const totalVideos = document.getElementById('totalVideos');
-        const storageProgress = document.getElementById('storageProgress');
-        const clearAllBtn = document.getElementById('clearAllBtn');
         
-        // Security Configuration - Password is hidden in the code
+        // Configuration
         const STORAGE_KEY = 'videoGalleryAuth';
-        const PASSWORD = 'ILOVESUMAN'; // Hidden password - not visible to users
-        
-        // Unlimited Storage Setup
+        const PASSWORD = 'ILOVESUMAN';
         let currentSort = 'newest';
         let currentSearch = '';
         let isAuthenticated = false;
-        
-        // Initialize authentication
-        function initAuth() {
+
+        // Initialize the application
+        async function initApp() {
+            try {
+                await videoStorage.init();
+                checkAuthentication();
+                await refreshGallery();
+            } catch (error) {
+                console.error('Error initializing app:', error);
+                noVideosMessage.textContent = 'Error loading videos. Please refresh the page.';
+            }
+        }
+
+        // Check if user is authenticated
+        function checkAuthentication() {
             const authData = sessionStorage.getItem(STORAGE_KEY);
             if (authData && JSON.parse(authData).authenticated) {
                 isAuthenticated = true;
-                showAuthenticatedUI();
-            } else {
-                showAuthUI();
+                showAdminPanel();
             }
         }
-        
-        // Show authentication UI
-        function showAuthUI() {
-            authSection.classList.add('active');
-            searchSection.classList.remove('active');
-            uploadArea.classList.remove('active');
-            gallerySection.classList.add('active');
-            logoutSection.classList.remove('active');
-            storageManagement.classList.remove('active');
-            isAuthenticated = false;
-            refreshGallery();
-        }
-        
-        // Show authenticated UI
-        function showAuthenticatedUI() {
-            authSection.classList.remove('active');
-            searchSection.classList.add('active');
-            uploadArea.classList.add('active');
-            gallerySection.classList.add('active');
-            logoutSection.classList.add('active');
-            storageManagement.classList.add('active');
+
+        // Show admin panel
+        function showAdminPanel() {
+            uploadArea.style.display = 'block';
+            logoutSection.style.display = 'block';
+            authSection.style.display = 'none';
             isAuthenticated = true;
-            refreshGallery();
-            updateStorageStats();
         }
-        
+
+        // Hide admin panel
+        function hideAdminPanel() {
+            uploadArea.style.display = 'none';
+            logoutSection.style.display = 'none';
+            authSection.style.display = 'block';
+            isAuthenticated = false;
+        }
+
         // Verify password
         function verifyPassword(password) {
             return password === PASSWORD;
         }
-        
-        // Update storage statistics
-        async function updateStorageStats() {
-            try {
-                const usage = await unlimitedStorage.getStorageUsage();
-                const usedMB = (usage.totalSize / (1024 * 1024)).toFixed(2);
-                const usedGB = (usage.totalSize / (1024 * 1024 * 1024)).toFixed(2);
-                
-                storageUsed.textContent = `Storage used: ${usedMB} MB`;
-                totalVideos.textContent = `Total videos: ${usage.videoCount}`;
-                storageProgress.style.width = `${usage.usagePercentage}%`;
-                
-                videoCount.textContent = `Videos: ${usage.videoCount}`;
-            } catch (error) {
-                console.error('Error updating storage stats:', error);
-            }
-        }
-        
-        // Get all videos from unlimited storage
+
+        // Get all videos
         async function getAllVideos() {
             try {
-                return await unlimitedStorage.getAllVideos();
+                return await videoStorage.getAllVideos();
             } catch (error) {
                 console.error('Error getting videos:', error);
                 return [];
             }
         }
-        
-        // Save video to unlimited storage
+
+        // Save video to storage
         async function saveVideoToStorage(file) {
             try {
-                return await unlimitedStorage.saveVideo(file);
+                return await videoStorage.saveVideo(file);
             } catch (error) {
                 console.error('Error saving video:', error);
                 throw error;
             }
         }
-        
-        // Delete video from unlimited storage
+
+        // Delete video from storage
         async function deleteVideoFromStorage(id) {
             try {
-                await unlimitedStorage.deleteVideo(id);
+                await videoStorage.deleteVideo(id);
             } catch (error) {
                 console.error('Error deleting video:', error);
                 throw error;
             }
         }
-        
+
         // Update video count display
         function updateVideoCount(videos) {
-            videoCount.textContent = `Videos: ${videos.length}`;
+            videoCount.textContent = `Total Videos: ${videos.length}`;
         }
-        
+
         // Render video gallery
         function renderVideoGallery(videos, searchTerm = '') {
             videoGallery.innerHTML = '';
@@ -988,13 +905,13 @@
                     <div class="video-info">
                         <div class="video-title" title="${video.name}">${video.name}</div>
                         <div class="video-details">
-                            <span>${formatFileSize(video.size)}</span>
+                            <span class="file-size-info">${formatFileSize(video.size)}</span>
                             <span>${new Date(video.date).toLocaleDateString()}</span>
                         </div>
                         <div class="video-actions">
-                            <button class="action-btn play-btn" data-id="${video.id}">Play</button>
-                            <button class="action-btn download-btn" data-id="${video.id}">Download</button>
-                            ${isAuthenticated ? '<button class="action-btn delete-btn" data-id="' + video.id + '">Delete</button>' : ''}
+                            <button class="action-btn play-btn" data-id="${video.id}">▶ Play</button>
+                            <button class="action-btn download-btn" data-id="${video.id}">📥 Download</button>
+                            ${isAuthenticated ? '<button class="action-btn delete-btn" data-id="' + video.id + '">🗑 Delete</button>' : ''}
                         </div>
                     </div>
                 `;
@@ -1026,7 +943,7 @@
                 });
             }
         }
-        
+
         // Play video in new tab
         async function playVideo(id) {
             const videos = await getAllVideos();
@@ -1034,9 +951,11 @@
             if (video) {
                 const videoURL = URL.createObjectURL(video.file);
                 window.open(videoURL, '_blank');
+                // Update access time
+                await videoStorage.updateAccessTime(id);
             }
         }
-        
+
         // Download video
         async function downloadVideo(id) {
             const videos = await getAllVideos();
@@ -1050,23 +969,28 @@
                 a.click();
                 document.body.removeChild(a);
                 URL.revokeObjectURL(videoURL);
+                // Update access time
+                await videoStorage.updateAccessTime(id);
             }
         }
-        
+
         // Delete video
         async function deleteVideo(id) {
             if (confirm('Are you sure you want to delete this video?')) {
                 try {
                     await deleteVideoFromStorage(id);
                     await refreshGallery();
-                    await updateStorageStats();
+                    if (isAuthenticated) {
+                        const stats = await videoStorage.getStorageStats();
+                        updateVideoCount(await getAllVideos());
+                    }
                 } catch (error) {
                     console.error('Error deleting video:', error);
                     alert('Error deleting video. Please try again.');
                 }
             }
         }
-        
+
         // Refresh gallery
         async function refreshGallery() {
             const videos = await getAllVideos();
@@ -1075,25 +999,23 @@
             }
             renderVideoGallery(videos, currentSearch);
         }
-        
+
         // Update progress bar
         function updateProgress(loaded, total, fileName) {
             const percent = Math.round((loaded / total) * 100);
             progressBar.style.width = percent + '%';
             progressText.textContent = `Uploading ${fileName}: ${percent}% (${formatFileSize(loaded)} / ${formatFileSize(total)})`;
         }
-        
+
         // Helper function to format file size
         function formatFileSize(bytes) {
             if (bytes === 0) return '0 Bytes';
-            
             const k = 1024;
             const sizes = ['Bytes', 'KB', 'MB', 'GB'];
             const i = Math.floor(Math.log(bytes) / Math.log(k));
-            
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
-        
+
         // Event Listeners
         loginBtn.addEventListener('click', () => {
             const password = passwordInput.value.trim();
@@ -1109,38 +1031,34 @@
                     timestamp: new Date().getTime()
                 }));
                 
-                isAuthenticated = true;
-                showAuthenticatedUI();
+                showAdminPanel();
                 authMessage.textContent = '';
                 passwordInput.value = '';
+                refreshGallery();
             } else {
                 authMessage.textContent = 'Incorrect password. Access denied.';
                 passwordInput.value = '';
             }
         });
-        
+
         passwordInput.addEventListener('keyup', (e) => {
             if (e.key === 'Enter') {
                 loginBtn.click();
             }
         });
-        
+
         browseBtn.addEventListener('click', () => {
-            if (!isAuthenticated) {
-                alert('Please enter password first to upload videos');
-                return;
-            }
+            if (!isAuthenticated) return;
             fileInput.click();
         });
-        
-        uploadArea.addEventListener('click', () => {
-            if (!isAuthenticated) {
-                alert('Please enter password first to upload videos');
-                return;
+
+        uploadArea.addEventListener('click', (e) => {
+            if (!isAuthenticated) return;
+            if (e.target === uploadArea || e.target.classList.contains('upload-text')) {
+                fileInput.click();
             }
-            fileInput.click();
         });
-        
+
         // Handle file selection
         fileInput.addEventListener('change', async function() {
             if (!isAuthenticated) return;
@@ -1153,6 +1071,7 @@
                 browseBtn.disabled = true;
                 
                 let uploadedCount = 0;
+                let errorCount = 0;
                 
                 // Process each file
                 for (const file of files) {
@@ -1160,12 +1079,6 @@
                     if (!file.type.startsWith('video/')) {
                         alert(`Skipping ${file.name}: Not a video file`);
                         uploadedCount++;
-                        if (uploadedCount === files.length) {
-                            progressContainer.style.display = 'none';
-                            browseBtn.disabled = false;
-                            await refreshGallery();
-                            await updateStorageStats();
-                        }
                         continue;
                     }
                     
@@ -1173,7 +1086,7 @@
                         // Update progress
                         updateProgress(0, file.size, file.name);
                         
-                        // Save to unlimited storage
+                        // Save to storage
                         await saveVideoToStorage(file);
                         
                         uploadedCount++;
@@ -1183,17 +1096,23 @@
                         
                     } catch (error) {
                         console.error('Error saving video:', error);
-                        uploadedCount++;
+                        errorCount++;
+                        alert(`Error uploading ${file.name}: ${error.message}`);
                     }
                 }
                 
-                // If all files are uploaded, hide progress and refresh
-                if (uploadedCount === files.length) {
+                // If all files are processed, hide progress and refresh
+                if (uploadedCount + errorCount === files.length) {
                     setTimeout(async () => {
                         progressContainer.style.display = 'none';
                         browseBtn.disabled = false;
                         await refreshGallery();
-                        await updateStorageStats();
+                        
+                        if (errorCount > 0) {
+                            alert(`Upload completed with ${errorCount} error(s).`);
+                        } else {
+                            alert('All videos uploaded successfully!');
+                        }
                     }, 1000);
                 }
                 
@@ -1201,25 +1120,22 @@
                 fileInput.value = '';
             }
         });
-        
+
         // Drag and drop functionality
         uploadArea.addEventListener('dragover', (e) => {
+            if (!isAuthenticated) return;
             e.preventDefault();
             uploadArea.classList.add('dragover');
         });
-        
+
         uploadArea.addEventListener('dragleave', () => {
             uploadArea.classList.remove('dragover');
         });
-        
-        uploadArea.addEventListener('drop', async (e) => {
+
+        uploadArea.addEventListener('drop', (e) => {
+            if (!isAuthenticated) return;
             e.preventDefault();
             uploadArea.classList.remove('dragover');
-            
-            if (!isAuthenticated) {
-                alert('Please enter password first to upload videos');
-                return;
-            }
             
             if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
                 const files = Array.from(e.dataTransfer.files);
@@ -1230,28 +1146,29 @@
                 fileInput.dispatchEvent(event);
             }
         });
-        
+
         // Search functionality
         searchBtn.addEventListener('click', () => {
             currentSearch = searchInput.value.trim();
             if (currentSearch) {
+                searchResults.textContent = `Searching for: "${currentSearch}"`;
                 refreshGallery();
             }
         });
-        
+
         clearSearchBtn.addEventListener('click', () => {
             searchInput.value = '';
             currentSearch = '';
             searchResults.textContent = '';
             refreshGallery();
         });
-        
+
         searchInput.addEventListener('keyup', (e) => {
             if (e.key === 'Enter') {
                 searchBtn.click();
             }
         });
-        
+
         // Sort functionality
         sortButtons.forEach(btn => {
             btn.addEventListener('click', () => {
@@ -1261,39 +1178,16 @@
                 refreshGallery();
             });
         });
-        
+
         // Logout functionality
         logoutBtn.addEventListener('click', () => {
             sessionStorage.removeItem(STORAGE_KEY);
-            isAuthenticated = false;
-            showAuthUI();
+            hideAdminPanel();
+            refreshGallery();
         });
-        
-        // Clear all videos
-        clearAllBtn.addEventListener('click', async () => {
-            if (confirm('Are you sure you want to delete ALL videos? This action cannot be undone!')) {
-                try {
-                    await unlimitedStorage.clearAllVideos();
-                    await refreshGallery();
-                    await updateStorageStats();
-                    alert('All videos have been deleted successfully.');
-                } catch (error) {
-                    console.error('Error clearing videos:', error);
-                    alert('Error clearing videos. Please try again.');
-                }
-            }
-        });
-        
-        // Initialize unlimited storage and authentication on page load
-        document.addEventListener('DOMContentLoaded', async () => {
-            try {
-                await unlimitedStorage.init();
-                initAuth();
-            } catch (error) {
-                console.error('Error initializing app:', error);
-                alert('Error initializing app. Please refresh the page.');
-            }
-        });
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', initApp);
     </script>
 </body>
 </html>
