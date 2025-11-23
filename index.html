@@ -1091,4 +1091,209 @@
             const sizes = ['Bytes', 'KB', 'MB', 'GB'];
             const i = Math.floor(Math.log(bytes) / Math.log(k));
             
-            return parseFloat((bytes
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        // Event Listeners
+        loginBtn.addEventListener('click', () => {
+            const password = passwordInput.value.trim();
+            
+            if (!password) {
+                authMessage.textContent = 'Please enter the password';
+                return;
+            }
+            
+            if (verifyPassword(password)) {
+                sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
+                    authenticated: true,
+                    timestamp: new Date().getTime()
+                }));
+                
+                isAuthenticated = true;
+                showAuthenticatedUI();
+                authMessage.textContent = '';
+                passwordInput.value = '';
+            } else {
+                authMessage.textContent = 'Incorrect password. Access denied.';
+                passwordInput.value = '';
+            }
+        });
+        
+        passwordInput.addEventListener('keyup', (e) => {
+            if (e.key === 'Enter') {
+                loginBtn.click();
+            }
+        });
+        
+        browseBtn.addEventListener('click', () => {
+            if (!isAuthenticated) {
+                alert('Please enter password first to upload videos');
+                return;
+            }
+            fileInput.click();
+        });
+        
+        uploadArea.addEventListener('click', () => {
+            if (!isAuthenticated) {
+                alert('Please enter password first to upload videos');
+                return;
+            }
+            fileInput.click();
+        });
+        
+        // Handle file selection
+        fileInput.addEventListener('change', async function() {
+            if (!isAuthenticated) return;
+            
+            if (this.files && this.files.length > 0) {
+                const files = Array.from(this.files);
+                
+                // Show progress bar
+                progressContainer.style.display = 'block';
+                browseBtn.disabled = true;
+                
+                let uploadedCount = 0;
+                
+                // Process each file
+                for (const file of files) {
+                    // Check if file is a video
+                    if (!file.type.startsWith('video/')) {
+                        alert(`Skipping ${file.name}: Not a video file`);
+                        uploadedCount++;
+                        if (uploadedCount === files.length) {
+                            progressContainer.style.display = 'none';
+                            browseBtn.disabled = false;
+                            await refreshGallery();
+                            await updateStorageStats();
+                        }
+                        continue;
+                    }
+                    
+                    try {
+                        // Update progress
+                        updateProgress(0, file.size, file.name);
+                        
+                        // Save to unlimited storage
+                        await saveVideoToStorage(file);
+                        
+                        uploadedCount++;
+                        
+                        // Update progress to complete for this file
+                        updateProgress(file.size, file.size, file.name);
+                        
+                    } catch (error) {
+                        console.error('Error saving video:', error);
+                        uploadedCount++;
+                    }
+                }
+                
+                // If all files are uploaded, hide progress and refresh
+                if (uploadedCount === files.length) {
+                    setTimeout(async () => {
+                        progressContainer.style.display = 'none';
+                        browseBtn.disabled = false;
+                        await refreshGallery();
+                        await updateStorageStats();
+                    }, 1000);
+                }
+                
+                // Reset file input
+                fileInput.value = '';
+            }
+        });
+        
+        // Drag and drop functionality
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            if (!isAuthenticated) {
+                alert('Please enter password first to upload videos');
+                return;
+            }
+            
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                const files = Array.from(e.dataTransfer.files);
+                fileInput.files = e.dataTransfer.files;
+                
+                // Trigger change event
+                const event = new Event('change', { bubbles: true });
+                fileInput.dispatchEvent(event);
+            }
+        });
+        
+        // Search functionality
+        searchBtn.addEventListener('click', () => {
+            currentSearch = searchInput.value.trim();
+            if (currentSearch) {
+                refreshGallery();
+            }
+        });
+        
+        clearSearchBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            currentSearch = '';
+            searchResults.textContent = '';
+            refreshGallery();
+        });
+        
+        searchInput.addEventListener('keyup', (e) => {
+            if (e.key === 'Enter') {
+                searchBtn.click();
+            }
+        });
+        
+        // Sort functionality
+        sortButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                sortButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentSort = btn.dataset.sort;
+                refreshGallery();
+            });
+        });
+        
+        // Logout functionality
+        logoutBtn.addEventListener('click', () => {
+            sessionStorage.removeItem(STORAGE_KEY);
+            isAuthenticated = false;
+            showAuthUI();
+        });
+        
+        // Clear all videos
+        clearAllBtn.addEventListener('click', async () => {
+            if (confirm('Are you sure you want to delete ALL videos? This action cannot be undone!')) {
+                try {
+                    await unlimitedStorage.clearAllVideos();
+                    await refreshGallery();
+                    await updateStorageStats();
+                    alert('All videos have been deleted successfully.');
+                } catch (error) {
+                    console.error('Error clearing videos:', error);
+                    alert('Error clearing videos. Please try again.');
+                }
+            }
+        });
+        
+        // Initialize unlimited storage and authentication on page load
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                await unlimitedStorage.init();
+                initAuth();
+            } catch (error) {
+                console.error('Error initializing app:', error);
+                alert('Error initializing app. Please refresh the page.');
+            }
+        });
+    </script>
+</body>
+</html>
