@@ -50,6 +50,115 @@
             opacity: 0.9;
         }
         
+        /* Ad Container Styles */
+        .ad-container {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .ad-label {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 8px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            color: white;
+        }
+        
+        .ad-banner {
+            width: 100%;
+            max-width: 728px;
+            height: 90px;
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            color: white;
+            font-weight: bold;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .ad-banner:hover {
+            transform: scale(1.02);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .ad-square {
+            width: 300px;
+            height: 250px;
+            background: linear-gradient(45deg, #00b4db, #0083b0);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .ad-square:hover {
+            transform: scale(1.02);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .ad-text {
+            font-size: 0.9rem;
+            margin-top: 10px;
+            opacity: 0.8;
+        }
+        
+        .ad-sidebar {
+            width: 160px;
+            height: 600px;
+            background: linear-gradient(45deg, #56ab2f, #a8e6cf);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+        }
+        
+        .ad-sidebar:hover {
+            transform: scale(1.02);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .ad-content {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+        
+        .main-content {
+            flex: 1;
+        }
+        
+        .sidebar-ads {
+            width: 180px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
         .telegram-section {
             background: rgba(29, 161, 242, 0.2);
             padding: 20px;
@@ -493,6 +602,22 @@
             .search-box {
                 min-width: 100%;
             }
+            
+            .ad-content {
+                flex-direction: column;
+            }
+            
+            .sidebar-ads {
+                width: 100%;
+                flex-direction: row;
+                justify-content: center;
+            }
+            
+            .ad-sidebar {
+                writing-mode: horizontal-tb;
+                width: 100%;
+                height: 100px;
+            }
         }
 
         /* Large file upload styles */
@@ -508,6 +633,28 @@
         .file-size-info {
             color: #4cd964;
             font-weight: bold;
+        }
+        
+        /* Ad close button */
+        .ad-close {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(255, 255, 255, 0.3);
+            border: none;
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .ad-close:hover {
+            background: rgba(255, 255, 255, 0.5);
         }
     </style>
 
@@ -652,89 +799,157 @@
             <p class="subtitle">Video Gallery - Watch Videos & Upload with Password</p>
         </header>
         
-        <!-- Telegram Button -->
-        <section class="telegram-section">
-            <h3>Join Our Telegram Community</h3>
-            <p style="margin: 15px 0; opacity: 0.9;">Connect with us for updates and more content</p>
-            <a href="https://t.me/+nViplAvHx0phNGRl" class="telegram-btn" target="_blank">
-                <span class="telegram-icon">📱</span>
-                Join Telegram Channel
-            </a>
-        </section>
+        <!-- Top Banner Ad -->
+        <div class="ad-container">
+            <span class="ad-label">Advertisement</span>
+            <button class="ad-close" onclick="this.parentElement.style.display='none'">×</button>
+            <div class="ad-banner" onclick="trackAdClick('top_banner')">
+                🎬 Premium Video Streaming - Watch HD Movies
+            </div>
+            <div class="ad-text">Sponsored Content • Click to learn more</div>
+        </div>
         
-        <!-- Admin Upload Section -->
-        <section class="auth-section" id="authSection">
-            <div class="auth-form">
-                <h2>Admin Upload Access</h2>
-                <p style="margin-bottom: 20px; opacity: 0.8;">Enter password to upload videos (3GB+ supported)</p>
+        <div class="ad-content">
+            <div class="main-content">
+                <!-- Telegram Button -->
+                <section class="telegram-section">
+                    <h3>Join Our Telegram Community</h3>
+                    <p style="margin: 15px 0; opacity: 0.9;">Connect with us for updates and more content</p>
+                    <a href="https://t.me/+nViplAvHx0phNGRl" class="telegram-btn" target="_blank">
+                        <span class="telegram-icon">📱</span>
+                        Join Telegram Channel
+                    </a>
+                </section>
                 
-                <div class="form-group">
-                    <label class="form-label" for="passwordInput">Password</label>
-                    <input type="password" class="form-input" id="passwordInput" placeholder="Enter admin password">
+                <!-- Middle Square Ad -->
+                <div class="ad-container">
+                    <span class="ad-label">Advertisement</span>
+                    <button class="ad-close" onclick="this.parentElement.style.display='none'">×</button>
+                    <div class="ad-square" onclick="trackAdClick('middle_square')">
+                        <div style="text-align: center;">
+                            <div style="font-size: 1.5rem;">📱</div>
+                            <div>Download Our App</div>
+                            <div style="font-size: 0.8rem; margin-top: 5px;">Better Experience</div>
+                        </div>
+                    </div>
+                    <div class="ad-text">Get exclusive features on mobile</div>
                 </div>
                 
-                <button class="auth-btn" id="loginBtn">Access Upload Panel</button>
-                <div class="auth-message" id="authMessage"></div>
-            </div>
-        </section>
-        
-        <!-- Upload Section (Hidden by default) -->
-        <section class="upload-section" id="uploadArea" style="display: none;">
-            <div class="admin-panel">
-                <div class="admin-title">📁 Admin Upload Panel</div>
-                <p>You can upload large videos up to 5GB. Files are permanently stored.</p>
-            </div>
-            
-            <div class="upload-icon">🚀</div>
-            <p class="upload-text">Drag & drop your video files here or click to browse</p>
-            <input type="file" id="fileInput" class="file-input" accept="video/*" multiple>
-            <button class="upload-btn" id="browseBtn">Upload Videos</button>
-            
-            <div class="large-file-warning">
-                ⚡ <strong>Large File Support:</strong> Videos up to 5GB are supported
-            </div>
-            
-            <p class="storage-info">All videos are permanently stored in your browser</p>
-            <div class="video-count" id="videoCount">Total Videos: 0</div>
-            
-            <div class="progress-container" id="progressContainer">
-                <div class="progress-bar" id="progressBar"></div>
-            </div>
-            <div class="progress-text" id="progressText"></div>
-        </section>
-        
-        <!-- Search Section -->
-        <section class="search-section">
-            <div class="search-container">
-                <input type="text" class="search-box" id="searchInput" placeholder="Search videos by name...">
-                <button class="search-btn" id="searchBtn">Search</button>
-                <button class="search-btn" id="clearSearchBtn">Clear</button>
-            </div>
-            <div class="search-results" id="searchResults"></div>
-        </section>
-        
-        <!-- Video Gallery (Always visible) -->
-        <section class="gallery-section">
-            <div class="gallery-header">
-                <h2 class="gallery-title">Video Gallery</h2>
-                <div class="sort-options">
-                    <button class="sort-btn active" data-sort="newest">Newest First</button>
-                    <button class="sort-btn" data-sort="oldest">Oldest First</button>
-                    <button class="sort-btn" data-sort="name">By Name</button>
-                    <button class="sort-btn" data-sort="size">By Size</button>
+                <!-- Admin Upload Section -->
+                <section class="auth-section" id="authSection">
+                    <div class="auth-form">
+                        <h2>Admin Upload Access</h2>
+                        <p style="margin-bottom: 20px; opacity: 0.8;">Enter password to upload videos (3GB+ supported)</p>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="passwordInput">Password</label>
+                            <input type="password" class="form-input" id="passwordInput" placeholder="Enter admin password">
+                        </div>
+                        
+                        <button class="auth-btn" id="loginBtn">Access Upload Panel</button>
+                        <div class="auth-message" id="authMessage"></div>
+                    </div>
+                </section>
+                
+                <!-- Upload Section (Hidden by default) -->
+                <section class="upload-section" id="uploadArea" style="display: none;">
+                    <div class="admin-panel">
+                        <div class="admin-title">📁 Admin Upload Panel</div>
+                        <p>You can upload large videos up to 5GB. Files are permanently stored.</p>
+                    </div>
+                    
+                    <div class="upload-icon">🚀</div>
+                    <p class="upload-text">Drag & drop your video files here or click to browse</p>
+                    <input type="file" id="fileInput" class="file-input" accept="video/*" multiple>
+                    <button class="upload-btn" id="browseBtn">Upload Videos</button>
+                    
+                    <div class="large-file-warning">
+                        ⚡ <strong>Large File Support:</strong> Videos up to 5GB are supported
+                    </div>
+                    
+                    <p class="storage-info">All videos are permanently stored in your browser</p>
+                    <div class="video-count" id="videoCount">Total Videos: 0</div>
+                    
+                    <div class="progress-container" id="progressContainer">
+                        <div class="progress-bar" id="progressBar"></div>
+                    </div>
+                    <div class="progress-text" id="progressText"></div>
+                </section>
+                
+                <!-- Search Section -->
+                <section class="search-section">
+                    <div class="search-container">
+                        <input type="text" class="search-box" id="searchInput" placeholder="Search videos by name...">
+                        <button class="search-btn" id="searchBtn">Search</button>
+                        <button class="search-btn" id="clearSearchBtn">Clear</button>
+                    </div>
+                    <div class="search-results" id="searchResults"></div>
+                </section>
+                
+                <!-- Bottom Banner Ad -->
+                <div class="ad-container">
+                    <span class="ad-label">Advertisement</span>
+                    <button class="ad-close" onclick="this.parentElement.style.display='none'">×</button>
+                    <div class="ad-banner" onclick="trackAdClick('bottom_banner')">
+                        🎥 Video Editing Software - 50% Off Today!
+                    </div>
+                    <div class="ad-text">Limited Time Offer • Click to claim discount</div>
+                </div>
+                
+                <!-- Video Gallery (Always visible) -->
+                <section class="gallery-section">
+                    <div class="gallery-header">
+                        <h2 class="gallery-title">Video Gallery</h2>
+                        <div class="sort-options">
+                            <button class="sort-btn active" data-sort="newest">Newest First</button>
+                            <button class="sort-btn" data-sort="oldest">Oldest First</button>
+                            <button class="sort-btn" data-sort="name">By Name</button>
+                            <button class="sort-btn" data-sort="size">By Size</button>
+                        </div>
+                    </div>
+                    
+                    <div class="video-gallery" id="videoGallery">
+                        <div class="no-videos" id="noVideosMessage">
+                            Loading videos...
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- Logout Section (Only for admins) -->
+                <div class="logout-section" id="logoutSection" style="display: none;">
+                    <button class="logout-btn" id="logoutBtn">Lock Upload Panel</button>
                 </div>
             </div>
             
-            <div class="video-gallery" id="videoGallery">
-                <div class="no-videos" id="noVideosMessage">
-                    Loading videos...
+            <!-- Sidebar Ads -->
+            <div class="sidebar-ads">
+                <div class="ad-container">
+                    <span class="ad-label">Ad</span>
+                    <button class="ad-close" onclick="this.parentElement.style.display='none'">×</button>
+                    <div class="ad-sidebar" onclick="trackAdClick('sidebar_1')">
+                        Premium Video Storage
+                    </div>
+                </div>
+                
+                <div class="ad-container">
+                    <span class="ad-label">Ad</span>
+                    <button class="ad-close" onclick="this.parentElement.style.display='none'">×</button>
+                    <div class="ad-square" onclick="trackAdClick('sidebar_2')">
+                        <div style="text-align: center;">
+                            <div style="font-size: 1.5rem;">⚡</div>
+                            <div>Fast Uploads</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="ad-container">
+                    <span class="ad-label">Ad</span>
+                    <button class="ad-close" onclick="this.parentElement.style.display='none'">×</button>
+                    <div class="ad-sidebar" onclick="trackAdClick('sidebar_3')">
+                        Unlimited Streaming
+                    </div>
                 </div>
             </div>
-        </section>
-        
-        <!-- Logout Section (Only for admins) -->
-        <div class="logout-section" id="logoutSection" style="display: none;">
-            <button class="logout-btn" id="logoutBtn">Lock Upload Panel</button>
         </div>
         
         <footer>
@@ -743,6 +958,15 @@
     </div>
 
     <script>
+        // Ad tracking function
+        function trackAdClick(adPosition) {
+            console.log(`Ad clicked: ${adPosition}`);
+            // Here you would typically send this data to your analytics platform
+            alert(`Thank you for clicking the ad! (Position: ${adPosition})`);
+            // Simulate redirect to advertiser
+            // window.open('https://example.com', '_blank');
+        }
+
         // DOM Elements
         const authSection = document.getElementById('authSection');
         const uploadArea = document.getElementById('uploadArea');
